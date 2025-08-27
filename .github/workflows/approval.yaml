@@ -1,0 +1,42 @@
+name: Terraform Approval
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  approve-or-reject:
+    runs-on: ubuntu-latest
+    if: github.event.issue.labels.*.name contains 'approval-needed'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Parse Comment
+        id: decision
+        run: |
+          COMMENT="${{ github.event.comment.body }}"
+          if [[ "$COMMENT" == "/approve" ]]; then
+            echo "decision=approve" >> $GITHUB_OUTPUT
+          elif [[ "$COMMENT" == "/reject" ]]; then
+            echo "decision=reject" >> $GITHUB_OUTPUT
+          else
+            echo "decision=ignore" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run Terraform Apply
+        if: steps.decision.outputs.decision == 'approve'
+        run: terraform apply -auto-approve tfplan
+        working-directory: ./terraform
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ap-south-1
+
+      - name: Close Issue if Rejected
+        if: steps.decision.outputs.decision == 'reject'
+        uses: peter-evans/close-issue@v3
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          comment: "Terraform plan rejected ❌"
