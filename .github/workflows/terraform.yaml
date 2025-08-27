@@ -37,37 +37,24 @@ jobs:
           aws configure set default.region ap-south-1
 
 
+      # Setup Terraform
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
+        uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: latest
+          terraform_version: 1.9.8
 
-      - name: Terraform fmt
-        id: fmt
-        run: terraform fmt -check
-        continue-on-error: true
-
+      # Terraform Init
       - name: Terraform Init
-        id: init
-        run: terraform init -no-color
-    
+        run: terraform init
+
+      # Terraform Validate
       - name: Terraform Validate
-        id: validate
-        run: terraform validate -no-color
+        run: terraform validate
 
+      # Terraform Plan
       - name: Terraform Plan
-        id: plan
-        run: terraform plan -no-color -out=tfplan > plan.txt
+        run: terraform plan -var="env=${{ inputs.env_name }}"
 
-      - name: Create Approval Issue
-        uses: peter-evans/create-issue-from-file@v4
-        with:
-          title: "Terraform Plan - ${{ github.sha }}"
-          content-filepath: ./terraform/plan.txt
-          labels: |
-            terraform
-            approval-needed
-
+      # Terraform Apply (auto approve)
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: terraform apply -auto-approve -input=false
+        run: terraform apply -auto-approve -var="env=${{ inputs.env_name }}"
