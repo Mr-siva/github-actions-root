@@ -53,8 +53,8 @@ jobs:
 
       # Terraform Plan
       - name: Terraform Plan
-        run: terraform plan -var="env=${{ inputs.env_name }}"
+        run: terraform plan 
 
       # Terraform Apply (auto approve)
       - name: Terraform Apply
-        run: terraform apply -auto-approve -var="env=${{ inputs.env_name }}"
+        run: terraform apply -auto-approve
