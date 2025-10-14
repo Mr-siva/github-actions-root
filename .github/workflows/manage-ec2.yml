@@ -1,0 +1,57 @@
+name: Manage EC2 Instances (Start/Stop)
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Choose action: start or stop"
+        required: true
+        default: "stop"
+        type: choice
+        options:
+          - start
+          - stop
+      instance_ids:
+        description: "Space-separated list of EC2 instance IDs"
+        required: true
+        default: "i-0123456789abcdef0 i-0fedcba9876543210"
+
+  # (optional) Scheduled automation
+  schedule:
+    - cron: "0 23 * * *"   # Every day at 11 PM UTC → stop nightly
+    - cron: "0 5 * * *"    # Every day at 5 AM UTC → start in morning
+
+permissions:
+  id-token: write      # Required for OIDC
+  contents: read
+
+jobs:
+  manage-ec2:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ap-south-1  # change region
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::123456789012:role/github-ec2-manager-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Manage EC2 Instances
+        run: |
+          echo "Action: ${{ github.event.inputs.action }}"
+          echo "Instances: ${{ github.event.inputs.instance_ids }}"
+          
+          if [ "${{ github.event.inputs.action }}" = "start" ]; then
+            aws ec2 start-instances --instance-ids ${{ github.event.inputs.instance_ids }}
+            echo "✅ Instances started"
+          elif [ "${{ github.event.inputs.action }}" = "stop" ]; then
+            aws ec2 stop-instances --instance-ids ${{ github.event.inputs.instance_ids }}
+            echo "🛑 Instances stopped"
+          else
+            echo "❌ Invalid action"
+            exit 1
+          fi
