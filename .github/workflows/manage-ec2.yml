@@ -37,7 +37,7 @@ jobs:
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: arn:aws:iam::123456789012:role/github-ec2-manager-role
+          role-to-assume: arn:aws:iam::919381858467:role/github-ec2-manager-role
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Manage EC2 Instances
