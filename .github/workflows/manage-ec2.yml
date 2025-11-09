@@ -17,9 +17,9 @@ on:
         default: "i-0123456789abcdef0 i-0fedcba9876543210"
 
   # (optional) Scheduled automation
-  schedule:
-    - cron: "0 23 * * *"   # Every day at 11 PM UTC → stop nightly
-    - cron: "0 5 * * *"    # Every day at 5 AM UTC → start in morning
+  #schedule:
+   # - cron: "0 23 * * *"   # Every day at 11 PM UTC → stop nightly
+   # - cron: "0 5 * * *"    # Every day at 5 AM UTC → start in morning
 
 permissions:
   id-token: write      # Required for OIDC
