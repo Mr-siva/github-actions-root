@@ -1,13 +1,13 @@
 package terraform.security
 
-deny[msg] {
-  resource := input.resource_changes[_]
+deny contains msg if {
+  some resource in input.resource_changes
   resource.type == "aws_security_group"
 
-  ingress := resource.change.after.ingress[_]
+  some ingress in resource.change.after.ingress
   ingress.from_port == 22
   ingress.to_port == 22
-  ingress.cidr_blocks[_] == "0.0.0.0/0"
+  "0.0.0.0/0" in ingress.cidr_blocks
 
-  msg := sprintf("❌ Security Group '%s' allows SSH from the internet (0.0.0.0/0)", [resource.name])
+  msg := sprintf("Security Group '%s' allows SSH from the internet (0.0.0.0/0)", [resource.name])
 }
