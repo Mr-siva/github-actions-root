@@ -53,6 +53,7 @@ jobs:
       - name: Terraform Plan (JSON)
         run: |
           terraform plan -out=tfplan.binary
+          terraform show tfplan.binary
           terraform show -json tfplan.binary > tfplan.json
 
       # 🔐 Install OPA
