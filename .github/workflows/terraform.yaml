@@ -13,29 +13,26 @@ on:
       AWS_SECRET_ACCESS_KEY:
         required: true
 
-
 jobs:
   terraform:
     runs-on: ubuntu-latest
 
     defaults:
       run:
-        working-directory: ./terraform   # ✅ points to terraform/ folder in child repo
+        working-directory: ./terraform
 
     steps:
       # Checkout child repo code
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        run: |
-          aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-          aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-          aws configure set default.region ap-south-1
-
+      # ✅ Proper AWS authentication for Terraform & SDK
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
 
       # Setup Terraform
       - name: Setup Terraform
@@ -45,7 +42,7 @@ jobs:
 
       # Terraform Init
       - name: Terraform Init
-        run: terraform init
+        run: terraform init -input=false
 
       # Terraform Validate
       - name: Terraform Validate
@@ -53,8 +50,8 @@ jobs:
 
       # Terraform Plan
       - name: Terraform Plan
-        run: terraform plan 
+        run: terraform plan -input=false
 
-      # Terraform Apply (auto approve)
-      - name: Terraform apply
-        run: terraform apply -auto-approve
+      # Terraform Apply
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -input=false
