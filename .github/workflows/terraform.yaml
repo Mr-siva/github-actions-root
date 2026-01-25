@@ -22,11 +22,16 @@ jobs:
         working-directory: ./terraform
 
     steps:
-      # Checkout child repo code
-      - name: Checkout
+      - name: Checkout Child Repo
         uses: actions/checkout@v4
 
-      # ✅ Proper AWS authentication for Terraform & SDK
+      # Checkout root repo to get OPA policies
+      - name: Checkout Policy Repo
+        uses: actions/checkout@v4
+        with:
+          repository: Mr-siva/github-actions-root
+          path: policy-repo
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -34,30 +39,51 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-south-1
 
-      # Setup Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.9.8
 
-      - name: Debug AWS Identity
-        run: aws sts get-caller-identity
-      
-      - name: AWS S3 Access
-        run: aws s3 ls s3://tf-state-s3-bucket-gha-3
-        
-      # Terraform Init
       - name: Terraform Init
         run: terraform init -input=false
 
-      # Terraform Validate
       - name: Terraform Validate
         run: terraform validate
 
-      # Terraform Plan
-      - name: Terraform Plan
-        run: terraform plan -input=false
+      - name: Terraform Plan (JSON)
+        run: |
+          terraform plan -out=tfplan.binary
+          terraform show -json tfplan.binary > tfplan.json
 
-      # Terraform Apply
+      # 🔐 Install OPA
+      - name: Install OPA
+        run: |
+          curl -L -o opa https://openpolicyagent.org/downloads/latest/opa_linux_amd64_static
+          chmod +x opa
+          sudo mv opa /usr/local/bin/
+
+      # 🔍 Run OPA Policy Check
+      - name: Run OPA Policy Check
+        run: |
+          opa eval --format pretty \
+            --data policy-repo/policies/ \
+            --input tfplan.json \
+            "data.terraform.security.deny"
+
+      # ❌ Fail pipeline if violations exist
+      - name: Enforce OPA Policies
+        run: |
+          violations=$(opa eval --format raw \
+            --data policy-repo/policies/ \
+            --input tfplan.json \
+            "data.terraform.security.deny")
+
+          if [ "$violations" != "[]" ]; then
+            echo "❌ OPA Policy Violations Found"
+            echo "$violations"
+            exit 1
+          fi
+
+      # Terraform Apply ONLY if OPA passed
       - name: Terraform Apply
         run: terraform apply -auto-approve -input=false
