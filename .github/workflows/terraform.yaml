@@ -42,6 +42,9 @@ jobs:
 
       - name: Debug AWS Identity
         run: aws sts get-caller-identity
+      
+      - name: AWS S3 Access
+        run: aws s3 ls s3://tf-state-s3-bucket-gha-3
         
       # Terraform Init
       - name: Terraform Init
