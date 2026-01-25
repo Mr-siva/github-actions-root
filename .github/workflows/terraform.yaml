@@ -41,9 +41,8 @@ jobs:
           terraform_version: 1.9.8
 
       - name: Debug AWS Identity
-        run: |
-              aws sts get-caller-identity
-              aws s3 ls
+        run: aws sts get-caller-identity
+        
       # Terraform Init
       - name: Terraform Init
         run: terraform init -input=false
